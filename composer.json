@@ -1,0 +1,19 @@
+{
+    "name": "glesys/butler-auth",
+    "description": "",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Christoffer Persson",
+            "email": "christoffer@glesys.se"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Butler\\Auth\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.1"
+    }
+}
