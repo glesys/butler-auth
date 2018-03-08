@@ -8,6 +8,14 @@
 composer require glesys/butler-auth
 ```
 
+## Registration
+
+Register the Butler Auth service provider in `bootstrap/app.php`:
+
+```php
+$app->register(Butler\Auth\ServiceProvider::class);
+```
+
 ## Configuration
 
 Add the `config/butler.php` configuration file if not already present in your
@@ -27,7 +35,7 @@ return [
 
     'auth' => [
 
-        'secret_key' => 'ff7c899a2108b262226e58314ee28850',
+        'secret_key' => env('BUTLER_AUTH_SECRET_KEY', ''),
 
         'required_claims' => [
             'aud' => 'https://audience.glesys.com/',
@@ -39,8 +47,9 @@ return [
     // ...
 
 ];
-
 ```
+
+Don't forget to set `BUTLER_AUTH_SECRET_KEY` in `.env` or your environment.
 
 Update your `config/auth.php` configuration file to use the `jwt` guard driver.
 
@@ -60,7 +69,6 @@ return [
     ],
 
 ];
-
 ```
 
 Enable your `auth` middleware and you're good to go!
