@@ -1,10 +1,63 @@
 language: php
-php:
-  - '7.2'
-  - nightly
+
+matrix:
+  include:
+    - php: 7.1
+      env:
+        - LARAVEL_VERSION=5.6.*
+        - PHPUNIT_VERSION=^7.0
+    - php: 7.1
+      env:
+        - LARAVEL_VERSION=5.7.*
+        - PHPUNIT_VERSION=^7.5
+    - php: 7.1
+      env:
+        - LARAVEL_VERSION=5.8.*
+        - PHPUNIT_VERSION=^7.5
+    - php: 7.2
+      env:
+        - LARAVEL_VERSION=5.6.*
+        - PHPUNIT_VERSION=^7.0
+    - php: 7.2
+      env:
+        - LARAVEL_VERSION=5.7.*
+        - PHPUNIT_VERSION=^7.5
+    - php: 7.2
+      env:
+        - LARAVEL_VERSION=5.8.*
+        - PHPUNIT_VERSION=^7.5
+    - php: 7.2
+      env:
+        - LARAVEL_VERSION=5.8.*
+        - PHPUNIT_VERSION=^8.0
+    - php: 7.2
+      env:
+        - LARAVEL_VERSION=^6.0
+        - PHPUNIT_VERSION=^8.0
+    - php: 7.3
+      env:
+        - LARAVEL_VERSION=5.6.*
+        - PHPUNIT_VERSION=^7.0
+    - php: 7.3
+      env:
+        - LARAVEL_VERSION=5.7.*
+        - PHPUNIT_VERSION=^7.5
+    - php: 7.3
+      env:
+        - LARAVEL_VERSION=5.8.*
+        - PHPUNIT_VERSION=^8.0
+    - php: 7.3
+      env:
+        - LARAVEL_VERSION=^6.0
+        - PHPUNIT_VERSION=^8.0
+
+before_install:
+  - composer global require hirak/prestissimo --no-plugins
+  - composer require "laravel/framework:${LARAVEL_VERSION}" --no-update
+  - composer require "phpunit/phpunit:${PHPUNIT_VERSION}" --dev --no-update
 
 install:
-  - travis_retry composer install --no-interaction --no-suggest
+  - travis_retry composer update --no-interaction --no-progress
 
 script:
- - ./vendor/bin/phpunit
+  - vendor/bin/phpunit
