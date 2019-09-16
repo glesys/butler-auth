@@ -198,6 +198,24 @@ class JwtGuardTest extends TestCase
         $this->assertEquals('subject', $guard->user()->sub);
     }
 
+    public function test_user_returns_user_with_multiple_required_claims_with_arrays()
+    {
+        $token = (new Builder())
+            ->setAudience('correct-audience')
+            ->setIssuer('correct-issuer')
+            ->setSubject('subject')
+            ->sign(new Sha256(), 'key')
+            ->getToken();
+
+        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
+        $guard = new JwtGuard($request, 'key', [
+            'aud' => ['another-audience', 'correct-audience'],
+            'iss' => ['another-issuer', 'correct-issuer'],
+        ]);
+
+        $this->assertEquals('subject', $guard->user()->sub);
+    }
+
     public function test_user_returns_user_from_provider_when_specified()
     {
         $provider = m::mock(UserProvider::class);
