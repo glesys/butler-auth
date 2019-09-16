@@ -32,11 +32,17 @@ class GenerateToken extends Command
             ->setIssuedAt(time())
             ->setSubject($subject);
 
-        if ($audience = config('butler.auth.required_claims.aud')) {
+        if ($audience = $this->ask(
+            'Please name the audience.',
+            collect(config('butler.auth.required_claims.aud'))->first()
+        )) {
             $builder->setAudience($audience);
         }
 
-        if ($issuer = config('butler.auth.required_claims.iss')) {
+        if ($issuer = $this->ask(
+            'Please name the issuer.',
+            collect(config('butler.auth.required_claims.iss'))->first()
+        )) {
             $builder->setIssuer($issuer);
         }
 

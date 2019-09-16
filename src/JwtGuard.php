@@ -5,13 +5,12 @@ namespace Butler\Auth;
 use Exception;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Auth\GuardHelpers;
-use Illuminate\Http\Request;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
+use Illuminate\Http\Request;
 use Lcobucci\JWT\Parser;
-use Lcobucci\JWT\Token;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
-use Lcobucci\JWT\ValidationData;
+use Lcobucci\JWT\Token;
 
 class JwtGuard implements Guard
 {
@@ -151,24 +150,20 @@ class JwtGuard implements Guard
      */
     protected function validateToken(Token $token)
     {
-        if (empty($token->getClaim('sub'))) {
-            return null;
+        if (empty($token->getClaim('sub', ''))) {
+            return false;
         }
 
-        $validator = new ValidationData();
-
         foreach ($this->requiredClaims as $claim => $value) {
-            switch ($claim) {
-                case 'aud':
-                    $validator->setAudience($value);
-                    break;
-                case 'iss':
-                    $validator->setIssuer($value);
-                    break;
+            if ($claim == 'aud' && collect($value)->intersect($token->getClaim('aud', ''))->isEmpty()) {
+                return false;
+            }
+            if ($claim == 'iss' && collect($value)->contains($token->getClaim('iss', '')) === false) {
+                return false;
             }
         }
 
-        return $token->validate($validator);
+        return true;
     }
 
     /**

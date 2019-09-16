@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Support multiple values for `aud` and `iss` in the `required_claims` configuration.
 
 ## [1.2.0] - 2019-09-09
 
