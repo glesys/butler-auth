@@ -9,7 +9,7 @@ use Lcobucci\JWT\Signer\Hmac\Sha256;
 
 class GenerateToken extends Command
 {
-    protected $signature = 'token:generate';
+    protected $signature = 'butler-auth:generate-token';
 
     protected $description = 'Generate tokens';
 

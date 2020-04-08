@@ -71,4 +71,6 @@ return [
 ];
 ```
 
+Generate tokens with `php artisan butler-auth:generate-token`.
+
 Enable your `auth` middleware and you're good to go!
