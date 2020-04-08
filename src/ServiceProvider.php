@@ -2,6 +2,7 @@
 
 namespace Butler\Auth;
 
+use Butler\Auth\Commands\GenerateSecretKey;
 use Butler\Auth\Commands\GenerateToken;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Foundation\Application as LaravelApplication;
@@ -28,9 +29,12 @@ class ServiceProvider extends BaseServiceProvider
     public function boot()
     {
         $this->setupConfig($this->app);
-        
+
         if ($this->app->runningInConsole()) {
-            $this->commands([GenerateToken::class]);
+            $this->commands([
+                GenerateSecretKey::class,
+                GenerateToken::class,
+            ]);
         }
 
         $this->app['auth']->extend('jwt', function ($app, $config) {

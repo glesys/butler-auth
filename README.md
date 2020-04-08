@@ -6,6 +6,8 @@
 
 ```sh
 composer require glesys/butler-auth
+
+php artisan butler-auth:generate-secret-key
 ```
 
 ## Registration
@@ -48,8 +50,6 @@ return [
 
 ];
 ```
-
-Don't forget to set `BUTLER_AUTH_SECRET_KEY` in `.env` or your environment.
 
 Update your `config/auth.php` configuration file to use the `jwt` guard driver.
 
