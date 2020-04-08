@@ -13,11 +13,6 @@ class GenerateToken extends Command
 
     protected $description = 'Generate tokens';
 
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     public function handle()
     {
         throw_unless(
