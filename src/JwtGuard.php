@@ -3,7 +3,6 @@
 namespace Butler\Auth;
 
 use Exception;
-use Illuminate\Auth\GenericUser;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
@@ -189,6 +188,6 @@ class JwtGuard implements Guard
             return $this->provider->retrieveById($token->getClaim('sub'));
         }
 
-        return new GenericUser($token->getClaims());
+        return new JwtUser($token->getClaims());
     }
 }

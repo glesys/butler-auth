@@ -3,6 +3,7 @@
 namespace Butler\Auth\Tests;
 
 use Butler\Auth\JwtGuard;
+use Butler\Auth\JwtUser;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Http\Request;
@@ -76,6 +77,19 @@ class JwtGuardTest extends TestCase
         $guard = new JwtGuard($request, 'key', []);
 
         $this->assertEquals('subject', $guard->user()->sub);
+    }
+
+    public function test_user_returns_user_returning_sub_for_getAuthIdentifier()
+    {
+        $token = (new Builder())
+            ->setSubject('subject')
+            ->sign(new Sha256(), 'key')
+            ->getToken();
+
+        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
+        $guard = new JwtGuard($request, 'key', []);
+
+        $this->assertEquals('subject', $guard->user()->getAuthIdentifier());
     }
 
     public function test_user_returns_user_with_token_in_query()
