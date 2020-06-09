@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Return a `JwtUser` instance from `JwtGuard` instead of `GenericUser` (`JwtUser` is a subclass of `GenericUser` to prevent a breaking change) with support for returning the value of `sub` from `getAuthIdentifier()`.
+
 
 ## [2.0.0] - 2020-04-15
 
