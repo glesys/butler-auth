@@ -11,14 +11,6 @@ composer require glesys/butler-auth
 php artisan butler-auth:generate-secret-key
 ```
 
-## Registration
-
-Register the Butler Auth service provider in `bootstrap/app.php`:
-
-```php
-$app->register(Butler\Auth\ServiceProvider::class);
-```
-
 ## Configuration
 
 Add the `config/butler.php` configuration file if not already present in your

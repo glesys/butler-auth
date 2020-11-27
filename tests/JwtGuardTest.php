@@ -7,8 +7,9 @@ use Butler\Auth\JwtUser;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Http\Request;
-use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Mockery as m;
 use PHPUnit\Framework\TestCase;
 
@@ -19,14 +20,9 @@ class JwtGuardTest extends TestCase
         m::close();
     }
 
-    protected function createRequest(string $token)
-    {
-        return Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-    }
-
     public function test_user_returns_null_with_empty_token()
     {
-        $request = Request::create('/', 'GET');
+        $request = Request::create('/');
         $guard = new JwtGuard($request, 'key', []);
 
         $this->assertEquals(null, $guard->user());
@@ -34,8 +30,7 @@ class JwtGuardTest extends TestCase
 
     public function test_user_returns_null_with_invalid_token()
     {
-        $token = 'invalid-token';
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
+        $request = Request::create("/?token=invalid-token");
         $guard = new JwtGuard($request, 'key', []);
 
         $this->assertEquals(null, $guard->user());
@@ -43,191 +38,225 @@ class JwtGuardTest extends TestCase
 
     public function test_user_returns_null_with_unsigned_token()
     {
-        $token = (new Builder())
-            ->setSubject('subject')
-            ->getToken();
-
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', []);
+        $token = 'eyJhbGciOiJub25lIn0.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.';
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', []);
 
         $this->assertEquals(null, $guard->user());
     }
 
     public function test_user_returns_null_with_incorrect_key()
     {
-        $token = (new Builder())
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'incorrect-key')
-            ->getToken();
+        $config = $this->configForKey('incorrect-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', []);
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', []);
 
         $this->assertEquals(null, $guard->user());
     }
 
-    public function test_user_returns_user()
+    public function test_user_returns_user_with_correct_key()
     {
-        $token = (new Builder())
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', []);
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
 
-        $this->assertEquals('subject', $guard->user()->sub);
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', []);
+
+        $this->assertInstanceOf(JwtUser::class, $guard->user());
     }
 
     public function test_user_returns_user_returning_sub_for_getAuthIdentifier()
     {
-        $token = (new Builder())
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', []);
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', []);
 
         $this->assertEquals('subject', $guard->user()->getAuthIdentifier());
     }
 
     public function test_user_returns_user_with_token_in_query()
     {
-        $token = (new Builder())
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', ['token' => $token]);
-        $guard = new JwtGuard($request, 'key', []);
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
 
-        $this->assertEquals('subject', $guard->user()->sub);
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', []);
+
+        $this->assertInstanceOf(JwtUser::class, $guard->user());
+    }
+
+    public function test_user_returns_user_with_token_in_header()
+    {
+        $config = $this->configForKey('correct-key');
+
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+
+        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
+        $guard = new JwtGuard($request, 'correct-key', []);
+
+        $this->assertInstanceOf(JwtUser::class, $guard->user());
     }
 
     public function test_user_returns_user_with_token_in_body()
     {
-        $token = (new Builder())
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
+
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
 
         $request = Request::create('/', 'POST', ['token' => $token]);
-        $guard = new JwtGuard($request, 'key', []);
+        $guard = new JwtGuard($request, 'correct-key', []);
 
-        $this->assertEquals('subject', $guard->user()->sub);
+        $this->assertInstanceOf(JwtUser::class, $guard->user());
     }
 
     public function test_user_returns_null_with_missing_subject()
     {
-        $token = (new Builder())
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', []);
+        $token = $config->builder()
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
 
-        $this->assertEquals(null, $guard->user());
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', []);
+
+        $this->assertNull($guard->user());
     }
 
     public function test_user_returns_null_with_incorrect_required_aud_claim()
     {
-        $token = (new Builder())
-            ->setAudience('incorrect-audience')
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', [
+        $token = $config->builder()
+            ->permittedFor('incorrect-audience')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', [
             'aud' => 'correct-audience',
         ]);
 
-        $this->assertEquals(null, $guard->user());
+        $this->assertNull($guard->user());
     }
 
     public function test_user_returns_null_with_incorrect_required_iss_claim()
     {
-        $token = (new Builder())
-            ->setIssuer('incorrect-issuer')
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', [
+        $token = $config->builder()
+            ->issuedBy('incorrect-issuer')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', [
             'iss' => 'correct-issuer',
         ]);
 
-        $this->assertEquals(null, $guard->user());
+        $this->assertNull($guard->user());
     }
 
     public function test_user_returns_user_with_correct_required_aud_claim()
     {
-        $token = (new Builder())
-            ->setAudience('correct-audience')
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', [
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->permittedFor('correct-audience')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', [
             'aud' => 'correct-audience',
         ]);
 
-        $this->assertEquals('subject', $guard->user()->sub);
+        $this->assertInstanceOf(JwtUser::class, $guard->user());
     }
 
     public function test_user_returns_user_with_correct_required_iss_claim()
     {
-        $token = (new Builder())
-            ->setIssuer('correct-issuer')
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', [
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->issuedBy('correct-issuer')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', [
             'iss' => 'correct-issuer',
         ]);
 
-        $this->assertEquals('subject', $guard->user()->sub);
+        $this->assertInstanceOf(JwtUser::class, $guard->user());
     }
 
     public function test_user_returns_user_with_multiple_required_claims()
     {
-        $token = (new Builder())
-            ->setAudience('correct-audience')
-            ->setIssuer('correct-issuer')
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', [
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->permittedFor('correct-audience')
+            ->issuedBy('correct-issuer')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', [
             'aud' => 'correct-audience',
             'iss' => 'correct-issuer',
         ]);
 
-        $this->assertEquals('subject', $guard->user()->sub);
+        $this->assertInstanceOf(JwtUser::class, $guard->user());
     }
 
     public function test_user_returns_user_with_multiple_required_claims_with_arrays()
     {
-        $token = (new Builder())
-            ->setAudience('correct-audience')
-            ->setIssuer('correct-issuer')
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', [
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->permittedFor('correct-audience')
+            ->issuedBy('correct-issuer')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
+
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', [
             'aud' => ['another-audience', 'correct-audience'],
             'iss' => ['another-issuer', 'correct-issuer'],
         ]);
 
-        $this->assertEquals('subject', $guard->user()->sub);
+        $this->assertInstanceOf(JwtUser::class, $guard->user());
     }
 
     public function test_user_returns_user_from_provider_when_specified()
@@ -237,37 +266,47 @@ class JwtGuardTest extends TestCase
             ->with('subject')
             ->andReturn(new GenericUser(['sub' => 'subject']));
 
-        $token = (new Builder())
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
 
-        $request = Request::create('/', 'GET', [], [], [], ['HTTP_AUTHORIZATION' => "Bearer {$token}"]);
-        $guard = new JwtGuard($request, 'key', [], $provider);
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
 
-        $this->assertEquals('subject', $guard->user()->sub);
+        $request = Request::create("/?token={$token}");
+        $guard = new JwtGuard($request, 'correct-key', [], $provider);
+
+        $this->assertInstanceOf(GenericUser::class, $guard->user());
     }
 
     public function test_validate_returns_false_with_incorrect_token()
     {
-        $token = 'incorrect-token';
-
         $request = Request::create('/');
-        $guard = new JwtGuard($request, 'key', []);
+        $guard = new JwtGuard($request, 'correct-key', []);
 
-        $this->assertEquals(false, $guard->validate(['token' => $token]));
+        $this->assertFalse($guard->validate(['token' => 'incorrect-token']));
     }
 
     public function test_validate_returns_true_with_correct_token()
     {
-        $token = (new Builder())
-            ->setSubject('subject')
-            ->sign(new Sha256(), 'key')
-            ->getToken();
+        $config = $this->configForKey('correct-key');
+
+        $token = $config->builder()
+            ->relatedTo('subject')
+            ->getToken($config->signer(), $config->signingKey())
+            ->toString();
 
         $request = Request::create('/');
-        $guard = new JwtGuard($request, 'key', []);
+        $guard = new JwtGuard($request, 'correct-key', []);
 
-        $this->assertEquals(true, $guard->validate(['token' => $token]));
+        $this->assertTrue($guard->validate(['token' => $token]));
+    }
+
+    private function configForKey(string $key)
+    {
+        return Configuration::forSymmetricSigner(
+            new Sha256(),
+            InMemory::plainText($key)
+        );
     }
 }

@@ -7,9 +7,13 @@ use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Http\Request;
-use Lcobucci\JWT\Parser;
+use Illuminate\Support\Arr;
+use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
-use Lcobucci\JWT\Token;
+use Lcobucci\JWT\Signer\Key\InMemory;
+use Lcobucci\JWT\Token\Plain;
+use Lcobucci\JWT\Validation\Constraint\IssuedBy;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
 
 class JwtGuard implements Guard
 {
@@ -23,34 +27,42 @@ class JwtGuard implements Guard
     protected $request;
 
     /**
-     * The secret key used for token verification.
-     *
-     * @var string
-     */
-    protected $secretKey;
-
-    /**
      * The required claims used for token validation.
      *
      * @var array
      */
-    protected $requiredClaims;
+    protected $requiredClaims = [];
+
+    /**
+     * JWT configuration object.
+     *
+     * @var \Lcobucci\JWT\Configuration
+     */
+    protected $config;
 
     /**
      * Create a new authentication guard.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  string  $secretKey
-     * @param  array  $requiredClaims
+     * @param  string  $secretKey  The secret key used for token verification.
+     * @param  array  $requiredClaims  The required claims used for token validation.
      * @param  \Illuminate\Contracts\Auth\UserProvider  $provider
      * @return void
      */
-    public function __construct(Request $request, string $secretKey, array $requiredClaims, UserProvider $provider = null)
-    {
+    public function __construct(
+        Request $request,
+        string $secretKey,
+        array $requiredClaims,
+        UserProvider $provider = null
+    ) {
         $this->request = $request;
-        $this->secretKey = $secretKey;
         $this->requiredClaims = $requiredClaims;
         $this->provider = $provider;
+
+        $this->config = Configuration::forSymmetricSigner(
+            new Sha256(),
+            InMemory::plainText($secretKey)
+        );
     }
 
     /**
@@ -109,7 +121,7 @@ class JwtGuard implements Guard
     /**
      * Authenticate the access token.
      *
-     * @param  string  $token
+     * @param  string  $accessToken
      * @return \Illuminate\Contracts\Auth\Authenticatable|null
      */
     protected function authenticateToken(string $accessToken)
@@ -121,7 +133,7 @@ class JwtGuard implements Guard
                 return null;
             }
 
-            if ($this->validateToken($token) && $this->verifyToken($token)) {
+            if ($this->validateToken($token)) {
                 return $this->createUser($token);
             }
         } catch (Exception $e) {
@@ -133,61 +145,59 @@ class JwtGuard implements Guard
     /**
      * Parse the token.
      *
-     * @param  string  $token
-     * @return \Lcobucci\JWT\Token|null
+     * @param  string  $accessToken
+     * @return \Lcobucci\JWT\Token\Plain|null
      */
     protected function parseToken(string $accessToken)
     {
-        return (new Parser())->parse($accessToken);
+        try {
+            return $this->config->parser()->parse($accessToken);
+        } catch (Exception $_) {
+            return null;
+        }
     }
 
     /**
      * Validate a token and ensure trusted audience and issuer.
      *
-     * @param  \Lcobucci\JWT\Token  $token
+     * @param  \Lcobucci\JWT\Token\Plain  $token
      * @return bool
      */
-    protected function validateToken(Token $token)
+    protected function validateToken(Plain $token)
     {
-        if (empty($token->getClaim('sub', ''))) {
+        if (empty($token->claims()->get('sub'))) {
             return false;
         }
 
-        foreach ($this->requiredClaims as $claim => $value) {
-            if ($claim == 'aud' && collect($value)->intersect($token->getClaim('aud', ''))->isEmpty()) {
-                return false;
-            }
-            if ($claim == 'iss' && collect($value)->contains($token->getClaim('iss', '')) === false) {
+        if ($audiences = Arr::wrap(data_get($this->requiredClaims, 'aud'))) {
+            if (collect($audiences)->intersect($token->claims()->get('aud'))->isEmpty()) {
                 return false;
             }
         }
 
-        return true;
-    }
+        $constraints = [
+            new SignedWith($this->config->signer(), $this->config->signingKey())
+        ];
 
-    /**
-     * Verify a token as signed with a trusted key.
-     *
-     * @param  \Lcobucci\JWT\Token  $token
-     * @return bool
-     */
-    protected function verifyToken(Token $token)
-    {
-        return $token->verify(new Sha256(), $this->secretKey);
+        if ($issuers = Arr::wrap(data_get($this->requiredClaims, 'iss'))) {
+            $constraints[] = new IssuedBy(...$issuers);
+        }
+
+        return $this->config->validator()->validate($token, ...$constraints);
     }
 
     /**
      * Create a user.
      *
-     * @param  \Lcobucci\JWT\Token  $token
+     * @param  \Lcobucci\JWT\Token\Plain  $token
      * @return \Illuminate\Contracts\Auth\Authenticatable|null
      */
-    protected function createUser(Token $token)
+    protected function createUser(Plain $token)
     {
         if ($this->provider) {
-            return $this->provider->retrieveById($token->getClaim('sub'));
+            return $this->provider->retrieveById($token->claims()->get('sub'));
         }
 
-        return new JwtUser($token->getClaims());
+        return new JwtUser($token->claims()->all());
     }
 }
