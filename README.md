@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/glesys/butler-auth.svg?branch=master)](https://travis-ci.org/glesys/butler-auth)
++![.github/workflows/test.yml](https://github.com/glesys/butler-auth/workflows/.github/workflows/test.yml/badge.svg)
+
 
 # Butler Auth
 
