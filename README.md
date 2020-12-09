@@ -1,4 +1,4 @@
-+![.github/workflows/test.yml](https://github.com/glesys/butler-auth/workflows/.github/workflows/test.yml/badge.svg)
+![.github/workflows/test.yml](https://github.com/glesys/butler-auth/workflows/.github/workflows/test.yml/badge.svg)
 
 
 # Butler Auth
