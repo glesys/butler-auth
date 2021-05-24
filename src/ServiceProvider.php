@@ -2,58 +2,45 @@
 
 namespace Butler\Auth;
 
-use Butler\Auth\Commands\GenerateSecretKey;
-use Butler\Auth\Commands\GenerateToken;
-use Illuminate\Contracts\Container\Container;
+use Illuminate\Auth\RequestGuard;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
 class ServiceProvider extends BaseServiceProvider
 {
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
     public function register()
     {
-
+        config(['auth.guards.butler.driver' => 'butler']);
     }
 
-    /**
-     * Boot the service provider.
-     *
-     * @return void
-     */
     public function boot()
     {
-        $this->setupConfig($this->app);
-
         if ($this->app->runningInConsole()) {
-            $this->commands([
-                GenerateSecretKey::class,
-                GenerateToken::class,
-            ]);
+            $this->publishes([
+                __DIR__ . '/../database/migrations' => database_path('migrations'),
+            ], 'butler-auth-migrations');
         }
 
-        $this->app['auth']->extend('jwt', function ($app, $config) {
-            return new JwtGuard(
-                $app['request'],
-                $app['config']['butler.auth.secret_key'],
-                $app['config']['butler.auth.required_claims'],
-                $app['auth']->createUserProvider($config['provider'] ?? null)
-            );
+        $this->configureGuard();
+    }
+
+    protected function configureGuard()
+    {
+        Auth::resolved(function ($auth) {
+            $auth->extend('butler', function () use ($auth) {
+                return tap($this->createGuard($auth), function ($guard) {
+                    app()->refresh('request', $guard, 'setRequest');
+                });
+            });
         });
     }
 
-    protected function setupConfig(Container $app)
+    protected function createGuard($auth)
     {
-        $source = realpath($raw = __DIR__ . '/../config/butler.php') ?: $raw;
-
-        if ($app->runningInConsole()) {
-            $this->publishes([$source => config_path('butler.php')]);
-        }
-
-        $this->mergeConfigFrom($source, 'butler');
+        return new RequestGuard(
+            new Guard(),
+            $this->app['request'],
+            $auth->createUserProvider()
+        );
     }
 }
-
