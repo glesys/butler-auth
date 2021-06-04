@@ -5,7 +5,7 @@ namespace Butler\Auth\Tests;
 use Butler\Auth\AccessToken;
 use Butler\Auth\Facades\TokenCache;
 use Butler\Auth\Guard;
-use Butler\Auth\Jobs\UpdateAccessTokenLastUsed;
+use Butler\Auth\Jobs\UpdateAccessTokensLastUsed;
 use Butler\Auth\Tests\Models\ConsumerWithoutTokenSupport;
 use Butler\Auth\Tests\Models\ConsumerWithTokenSupport;
 use Illuminate\Http\Request;
@@ -38,7 +38,7 @@ class GuardTest extends TestCase
     {
         $consumer = ConsumerWithoutTokenSupport::create();
 
-        $token = AccessToken::forceCreate([
+        AccessToken::forceCreate([
             'tokenable_id' => $consumer->id,
             'tokenable_type' => $consumer::class,
             'token' => hash('sha256', 'secret'),
@@ -46,7 +46,7 @@ class GuardTest extends TestCase
 
         $this->assertNull((new Guard())->__invoke($this->makeRequest()));
 
-        Queue::assertPushed(fn (UpdateAccessTokenLastUsed $job) => $job->accessToken->is($token));
+        Queue::assertNotPushed(UpdateAccessTokensLastUsed::class);
     }
 
     public function test_authentication_is_successful_with_valid_token()
@@ -54,47 +54,60 @@ class GuardTest extends TestCase
         $consumer = ConsumerWithTokenSupport::create();
         $token = $consumer->tokens()->create(['token' => hash('sha256', 'secret')]);
 
-        TokenCache::shouldReceive('get');
-        TokenCache::shouldReceive('put');
-
         $returnedConsumer = (new Guard())->__invoke($this->makeRequest());
 
-        Queue::assertPushed(fn (UpdateAccessTokenLastUsed $job) => $job->accessToken->is($token));
+        Queue::assertPushed(UpdateAccessTokensLastUsed::class);
 
         $this->assertEquals($consumer->id, $returnedConsumer->id);
         $this->assertEquals($token->id, $returnedConsumer->currentAccessToken()->id);
     }
 
-    public function test_access_token_is_cached_when_found()
+    public function test_UpdateAccessTokensLastUsed_job_is_dispatched_with_delay()
+    {
+        $this->travelTo(Date::parse('2021-05-25 12:00:00'));
+
+        ConsumerWithTokenSupport::create()
+            ->tokens()
+            ->create(['token' => hash('sha256', 'secret')]);
+
+        (new Guard())->__invoke($this->makeRequest());
+
+        Queue::assertPushed(function (UpdateAccessTokensLastUsed $job) {
+            return $job->delay->toDateTimeString() === '2021-05-25 12:02:00';
+        });
+    }
+
+    public function test_access_token_is_cached_correctly_when_found_in_database()
     {
         $this->travelTo(Date::parse('2021-05-25 12:00:00'));
 
         $consumer = ConsumerWithTokenSupport::create();
-        $token = $consumer->tokens()->create(['token' => hash('sha256', 'secret')]);
+        $token = $consumer->tokens()->create([
+            'token' => hash('sha256', 'secret'),
+            'last_used_at' => null,
+        ]);
 
-        TokenCache::shouldReceive('get')
-            ->with($token->token)
-            ->andReturnNull();
-
-        TokenCache::shouldReceive('put')->with(
-            Mockery::on(fn ($receivedToken) => $receivedToken->is($token)),
-        );
+        TokenCache::shouldReceive('get')->with($token->token)->andReturnNull();
+        TokenCache::shouldReceive('put')->with(Mockery::on(fn ($receivedToken)
+            => $receivedToken->is($token)
+            && $receivedToken->last_used_at->toDateTimeString() === '2021-05-25 12:00:00'));
 
         (new Guard())->__invoke($this->makeRequest());
     }
 
-    public function test_access_token_is_retrieved_from_cache_when_found()
+    public function test_access_token_is_retrieved_from_cache_when_found_in_cache()
     {
         $consumer = ConsumerWithTokenSupport::create();
         $token = $consumer->tokens()->create(['token' => hash('sha256', 'secret')]);
 
-        TokenCache::shouldReceive('get')
-            ->with($token->token)
-            ->andReturn($token);
+        TokenCache::shouldReceive('get')->with($token->token)->andReturn($token);
+        TokenCache::shouldReceive('put')->with(
+            Mockery::on(fn ($receivedToken) => $receivedToken->is($token)),
+        );
 
         $returnedConsumer = (new Guard())->__invoke($this->makeRequest());
 
-        $this->assertEquals($consumer->id, $returnedConsumer->id);
+        $this->assertTrue($returnedConsumer->is($consumer));
     }
 
     private function makeRequest(string $token = 'secret'): Request

@@ -5,7 +5,7 @@ namespace Butler\Auth;
 use Butler\Auth\AccessToken;
 use Butler\Auth\Contracts\HasAccessTokens;
 use Butler\Auth\Facades\TokenCache;
-use Butler\Auth\Jobs\UpdateAccessTokenLastUsed;
+use Butler\Auth\Jobs\UpdateAccessTokensLastUsed;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 
@@ -21,25 +21,23 @@ class Guard
             return;
         }
 
-        dispatch(new UpdateAccessTokenLastUsed($accessToken));
+        if ($this->supportsTokens($accessToken->tokenable)) {
+            UpdateAccessTokensLastUsed::dispatch()->delay(now()->addMinutes(2));
 
-        return $this->supportsTokens($accessToken->tokenable)
-            ? $accessToken->tokenable->withAccessToken($accessToken)
-            : null;
+            return $accessToken->tokenable->withAccessToken($accessToken);
+        }
     }
 
     protected function findAccessToken(string $plainToken): ?AccessToken
     {
         $hashedToken = AccessToken::hash($plainToken);
 
-        if ($cached = TokenCache::get($hashedToken)) {
-            return $cached;
+        if (! $accessToken = TokenCache::get($hashedToken)) {
+            $accessToken = AccessToken::with('tokenable')->byToken($hashedToken)->first();
         }
 
-        $accessToken = AccessToken::with('tokenable')->byToken($hashedToken)->first();
-
         if ($accessToken) {
-            TokenCache::put($accessToken);
+            TokenCache::put($accessToken->setAttribute('last_used_at', now()));
         }
 
         return $accessToken;

@@ -7,7 +7,7 @@ A minimal token authentication package inspired by [Laravel Sanctum](https://lar
 
 ## Installation
 
-Requires a working Laravel app with a database connection and preferably a cache store.
+Requires a working Laravel app with a database connection, a queue worker and a cache store like redis or memcached.
 
 ```sh
 composer require glesys/butler-auth
