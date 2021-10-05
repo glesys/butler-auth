@@ -32,12 +32,13 @@ class Guard
     {
         $hashedToken = AccessToken::hash($plainToken);
 
-        if (! $accessToken = TokenCache::get($hashedToken)) {
+        if (! $accessToken = rescue(fn () => TokenCache::get($hashedToken))) {
             $accessToken = AccessToken::with('tokenable')->byToken($hashedToken)->first();
         }
 
         if ($accessToken) {
-            TokenCache::put($accessToken->setAttribute('last_used_at', now()));
+            $accessToken->last_used_at = now();
+            rescue(fn () => TokenCache::put($accessToken));
         }
 
         return $accessToken;
