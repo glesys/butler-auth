@@ -110,6 +110,23 @@ class GuardTest extends TestCase
         $this->assertTrue($returnedConsumer->is($consumer));
     }
 
+    public function test_authentication_is_successful_even_if_cache_throws_exception()
+    {
+        $consumer = ConsumerWithTokenSupport::create();
+        $token = $consumer->tokens()->create(['token' => hash('sha256', 'secret')]);
+
+        $exception = new \Exception('Could not connect to redis');
+
+        TokenCache::shouldReceive('get')->once()->andThrow($exception);
+        TokenCache::shouldReceive('put')->once()->andThrow($exception);
+
+        $returnedConsumer = (new Guard())->__invoke($this->makeRequest());
+
+        Queue::assertPushed(UpdateAccessTokensLastUsed::class);
+
+        $this->assertTrue($returnedConsumer->is($consumer));
+    }
+
     private function makeRequest(string $token = 'secret'): Request
     {
         $request = Request::create('/', 'GET');

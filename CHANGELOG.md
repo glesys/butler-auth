@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+### Fixed
+- Catch cache exceptions so authentication can proceed when i.e. redis is unreachable.
+
 ## [4.0.0] - 2021-06-09
 
 ### Changed
