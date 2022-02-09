@@ -2,10 +2,9 @@
 
 namespace Butler\Auth\Concerns;
 
-use Butler\Auth\Contracts\HasAbilities;
 use Butler\Auth\AccessToken;
+use Butler\Auth\Contracts\HasAbilities;
 use Butler\Auth\NewAccessToken;
-use Illuminate\Support\Str;
 
 trait HasAccessTokens
 {
@@ -24,7 +23,7 @@ trait HasAccessTokens
     public function createToken(array $abilities = ['*'], string $name = null)
     {
         $token = $this->tokens()->create([
-            'token' => hash('sha256', $plainToken = Str::random(40)),
+            'token' => hash('sha256', $plainToken = str()->random(40)),
             'abilities' => $abilities,
             'name' => $name,
         ]);
