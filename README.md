@@ -58,7 +58,7 @@ Pass the token in the `Authorization` header as a `Bearer` token.
 
 ```sh
 vendor/bin/phpunit
-vendor/bin/phpcs
+vendor/bin/pint --test
 ```
 
 ## How To Contribute
