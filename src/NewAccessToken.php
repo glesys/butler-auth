@@ -2,7 +2,6 @@
 
 namespace Butler\Auth;
 
-use Butler\Auth\AccessToken;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 

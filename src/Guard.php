@@ -2,7 +2,6 @@
 
 namespace Butler\Auth;
 
-use Butler\Auth\AccessToken;
 use Butler\Auth\Contracts\HasAccessTokens;
 use Butler\Auth\Facades\TokenCache;
 use Butler\Auth\Jobs\UpdateAccessTokensLastUsed;

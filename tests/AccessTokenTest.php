@@ -72,7 +72,7 @@ class AccessTokenTest extends TestCase
 
     private function createToken(string $token = 'secret'): AccessToken
     {
-        return (ConsumerWithTokenSupport::create())
+        return ConsumerWithTokenSupport::create()
             ->tokens()
             ->create(['token' => hash('sha256', $token)]);
     }
