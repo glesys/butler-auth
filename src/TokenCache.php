@@ -2,7 +2,6 @@
 
 namespace Butler\Auth;
 
-use Butler\Auth\AccessToken;
 use Illuminate\Support\Facades\Cache;
 
 class TokenCache
