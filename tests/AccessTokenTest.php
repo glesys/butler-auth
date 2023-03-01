@@ -20,7 +20,7 @@ class AccessTokenTest extends TestCase
     {
         $token = $this->createToken();
 
-        TokenCache::shouldReceive('forget')->with($token->token);
+        TokenCache::expects('forget')->with($token->token);
 
         $token->delete();
     }

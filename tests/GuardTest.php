@@ -87,8 +87,8 @@ class GuardTest extends TestCase
             'last_used_at' => null,
         ]);
 
-        TokenCache::shouldReceive('get')->with($token->token)->andReturnNull();
-        TokenCache::shouldReceive('put')->with(Mockery::on(fn ($receivedToken)
+        TokenCache::expects('get')->with($token->token)->andReturnNull();
+        TokenCache::expects('put')->with(Mockery::on(fn ($receivedToken)
             => $receivedToken->is($token)
             && $receivedToken->last_used_at->toDateTimeString() === '2021-05-25 12:00:00'));
 
@@ -100,8 +100,8 @@ class GuardTest extends TestCase
         $consumer = ConsumerWithTokenSupport::create();
         $token = $consumer->tokens()->create(['token' => hash('sha256', 'secret')]);
 
-        TokenCache::shouldReceive('get')->with($token->token)->andReturn($token);
-        TokenCache::shouldReceive('put')->with(
+        TokenCache::expects('get')->with($token->token)->andReturn($token);
+        TokenCache::expects('put')->with(
             Mockery::on(fn ($receivedToken) => $receivedToken->is($token)),
         );
 
