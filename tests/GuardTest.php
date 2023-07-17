@@ -9,7 +9,6 @@ use Butler\Auth\Jobs\UpdateAccessTokensLastUsed;
 use Butler\Auth\Tests\Models\ConsumerWithoutTokenSupport;
 use Butler\Auth\Tests\Models\ConsumerWithTokenSupport;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 
@@ -64,7 +63,7 @@ class GuardTest extends TestCase
 
     public function test_UpdateAccessTokensLastUsed_job_is_dispatched_with_delay()
     {
-        $this->travelTo(Date::parse('2021-05-25 12:00:00'));
+        $this->travelTo('2021-05-25 12:00:00');
 
         ConsumerWithTokenSupport::create()
             ->tokens()
@@ -79,7 +78,7 @@ class GuardTest extends TestCase
 
     public function test_access_token_is_cached_correctly_when_found_in_database()
     {
-        $this->travelTo(Date::parse('2021-05-25 12:00:00'));
+        $this->travelTo('2021-05-25 12:00:00');
 
         $consumer = ConsumerWithTokenSupport::create();
         $token = $consumer->tokens()->create([
@@ -113,12 +112,12 @@ class GuardTest extends TestCase
     public function test_authentication_is_successful_even_if_cache_throws_exception()
     {
         $consumer = ConsumerWithTokenSupport::create();
-        $token = $consumer->tokens()->create(['token' => hash('sha256', 'secret')]);
+        $consumer->tokens()->create(['token' => hash('sha256', 'secret')]);
 
         $exception = new \Exception('Could not connect to redis');
 
-        TokenCache::shouldReceive('get')->once()->andThrow($exception);
-        TokenCache::shouldReceive('put')->once()->andThrow($exception);
+        TokenCache::expects('get')->andThrow($exception);
+        TokenCache::expects('put')->andThrow($exception);
 
         $returnedConsumer = (new Guard())->__invoke($this->makeRequest());
 

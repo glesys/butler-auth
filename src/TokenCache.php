@@ -2,6 +2,7 @@
 
 namespace Butler\Auth;
 
+use Illuminate\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 
 class TokenCache
@@ -13,16 +14,25 @@ class TokenCache
 
     public function get(string $hashedToken): ?AccessToken
     {
-        return Cache::get($this->key($hashedToken));
+        return $this->cache()->get($this->key($hashedToken));
     }
 
     public function put(AccessToken $token): bool
     {
-        return Cache::put($this->key($token->token), $token, now()->addDay());
+        return $this->cache()->put(
+            $this->key($token->token),
+            $token,
+            now()->addDay(),
+        );
     }
 
     public function forget($hashedToken): bool
     {
-        return Cache::forget($this->key($hashedToken));
+        return $this->cache()->forget($this->key($hashedToken));
+    }
+
+    private function cache(): Repository
+    {
+        return Cache::store(getenv('LARAVEL_OCTANE') ? 'octane' : null);
     }
 }

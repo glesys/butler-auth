@@ -4,12 +4,26 @@ namespace Butler\Auth\Tests;
 
 use Butler\Auth\AccessToken;
 use Butler\Auth\TokenCache;
+use Illuminate\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Date;
 use Mockery;
 
 class TokenCacheTest extends TestCase
 {
+    private $repository;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->repository = $this->mock(Repository::class);
+
+        Cache::shouldReceive('store')
+            ->with(null)
+            ->andReturn($this->repository)
+            ->byDefault();
+    }
+
     public function test_key()
     {
         $this->assertEquals(
@@ -23,11 +37,11 @@ class TokenCacheTest extends TestCase
         $tokenCache = new TokenCache();
         $token = new AccessToken(['token' => 'foo']);
 
-        Cache::shouldReceive('get')
+        $this->repository->expects('get')
             ->with($tokenCache->key('foo'))
             ->andReturn($token);
 
-        Cache::shouldReceive('get')
+        $this->repository->expects('get')
             ->with($tokenCache->key('bar'))
             ->andReturnNull();
 
@@ -37,12 +51,12 @@ class TokenCacheTest extends TestCase
 
     public function test_put()
     {
-        $this->travelTo(Date::parse('2021-05-29 12:00:00'));
+        $this->travelTo('2021-05-29 12:00:00');
 
         $tokenCache = new TokenCache();
         $token = new AccessToken(['token' => 'foo']);
 
-        Cache::shouldReceive('put')
+        $this->repository->expects('put')
             ->with(
                 $tokenCache->key('foo'),
                 $token,
@@ -57,10 +71,27 @@ class TokenCacheTest extends TestCase
     {
         $tokenCache = new TokenCache();
 
-        Cache::shouldReceive('forget')
+        $this->repository->expects('forget')
             ->with($tokenCache->key('foo'))
             ->andReturnTrue();
 
         $this->assertTrue($tokenCache->forget('foo'));
+    }
+
+    public function test_octane_is_used_if_running()
+    {
+        putenv('LARAVEL_OCTANE=1');
+
+        $tokenCache = new TokenCache();
+
+        Cache::expects('store')->with('octane')->andReturn($this->repository);
+
+        $this->repository->expects('forget')
+            ->with($tokenCache->key('foo'))
+            ->andReturnTrue();
+
+        $this->assertTrue($tokenCache->forget('foo'));
+
+        putenv('LARAVEL_OCTANE=0');
     }
 }
