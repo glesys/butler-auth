@@ -8,7 +8,7 @@ interface HasAccessTokens
 
     public function tokenCan(string $ability): bool;
 
-    public function createToken(array $abilities = ['*'], string $name = null);
+    public function createToken(array $abilities = ['*'], ?string $name = null);
 
     public function currentAccessToken(): HasAbilities;
 
