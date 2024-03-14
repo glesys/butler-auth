@@ -43,7 +43,7 @@ class Guard
         return $accessToken;
     }
 
-    protected function supportsTokens(Model $tokenable = null): bool
+    protected function supportsTokens(?Model $tokenable = null): bool
     {
         return $tokenable && $tokenable instanceof HasAccessTokens;
     }

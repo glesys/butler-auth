@@ -20,7 +20,7 @@ trait HasAccessTokens
         return $this->accessToken ? $this->accessToken->can($ability) : false;
     }
 
-    public function createToken(array $abilities = ['*'], string $name = null)
+    public function createToken(array $abilities = ['*'], ?string $name = null)
     {
         $token = $this->tokens()->create([
             'token' => hash('sha256', $plainToken = str()->random(40)),
