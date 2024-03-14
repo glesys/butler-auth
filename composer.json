@@ -2,12 +2,6 @@
     "name": "glesys/butler-auth",
     "description": "",
     "license": "MIT",
-    "authors": [
-        {
-            "name": "Christoffer Persson",
-            "email": "christoffer@glesys.se"
-        }
-    ],
     "autoload": {
         "psr-4": {
             "Butler\\Auth\\": "src/"
@@ -19,18 +13,18 @@
         }
     },
     "require": {
-        "php": "^8.1",
-        "illuminate/bus": "^10.0",
-        "illuminate/contracts": "^10.0",
-        "illuminate/database": "^10.0",
-        "illuminate/queue": "^10.0",
-        "illuminate/support": "^10.0"
+        "php": "^8.2",
+        "illuminate/bus": "^11.0",
+        "illuminate/contracts": "^11.0",
+        "illuminate/database": "^11.0",
+        "illuminate/queue": "^11.0",
+        "illuminate/support": "^11.0"
     },
     "require-dev": {
-        "laravel/pint": "^1.2",
-        "mockery/mockery": "^1.4.4",
-        "orchestra/testbench": "^8.0",
-        "phpunit/phpunit": "^10.0"
+        "laravel/pint": "^1.14",
+        "mockery/mockery": "^1.6.9",
+        "orchestra/testbench": "^9.0",
+        "phpunit/phpunit": "^10.5.13"
     },
     "config": {
         "sort-packages": true
