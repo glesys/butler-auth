@@ -3,13 +3,12 @@ on: push
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: Testing with Laravel ${{ matrix.laravel }} and PHP ${{ matrix.php }}
+    name: Testing with PHP ${{ matrix.php }}
     strategy:
       matrix:
-        php: [8.1, 8.2]
-        laravel: [^10.0]
+        php: [8.2, 8.3]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -19,9 +18,7 @@ jobs:
           coverage: none
 
       - name: Install Composer dependencies
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
-          composer update --prefer-dist --no-interaction --no-ansi --no-progress
+        run: composer update --prefer-dist --no-interaction --no-ansi --no-progress
 
       - name: Execute tests
         run: |
