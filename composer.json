@@ -14,17 +14,17 @@
     },
     "require": {
         "php": "^8.2",
-        "illuminate/bus": "^11.0",
-        "illuminate/contracts": "^11.0",
-        "illuminate/database": "^11.0",
-        "illuminate/queue": "^11.0",
-        "illuminate/support": "^11.0"
+        "illuminate/bus": "^11.0 | ^12.0",
+        "illuminate/contracts": "^11.0 | ^12.0",
+        "illuminate/database": "^11.0 | ^12.0",
+        "illuminate/queue": "^11.0 | ^12.0",
+        "illuminate/support": "^11.0 | ^12.0"
     },
     "require-dev": {
         "laravel/pint": "^1.14",
         "mockery/mockery": "^1.6.9",
-        "orchestra/testbench": "^9.0",
-        "phpunit/phpunit": "^10.5.13"
+        "orchestra/testbench": "^9.0 | ^10.0",
+        "phpunit/phpunit": "^10.5.13 | ^11.0"
     },
     "config": {
         "sort-packages": true
