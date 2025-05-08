@@ -3,10 +3,11 @@ on: push
 jobs:
   tests:
     runs-on: ubuntu-latest
-    name: Testing with PHP ${{ matrix.php }}
+    name: Testing with PHP ${{ matrix.php }} and Laravel ${{ matrix.laravel }} 
     strategy:
       matrix:
-        php: [8.2, 8.3]
+        php: [8.2, 8.3, 8.4]
+        laravel: [^11.0, ^12.0]
     steps:
       - uses: actions/checkout@v4
 
@@ -18,7 +19,15 @@ jobs:
           coverage: none
 
       - name: Install Composer dependencies
-        run: composer update --prefer-dist --no-interaction --no-ansi --no-progress
+        run: |
+          composer require \
+            "illuminate/bus:${{ matrix.laravel }}" \
+            "illuminate/contracts:${{ matrix.laravel }}" \
+            "illuminate/database:${{ matrix.laravel }}" \
+            "illuminate/queue:${{ matrix.laravel }}" \
+            "illuminate/support:${{ matrix.laravel }}" \
+            --no-interaction --no-update
+          composer update --prefer-dist --no-interaction --no-ansi --no-progress
 
       - name: Execute tests
         run: |
