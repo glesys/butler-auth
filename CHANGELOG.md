@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Use [octane](https://laravel.com/docs/master/octane) as cache when available.
 
 ## [7.1.0] - 2025-05-13
 
