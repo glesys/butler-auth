@@ -24,6 +24,8 @@ class AccessToken extends Model implements HasAbilities
         'token',
     ];
 
+    protected $table = 'access_tokens';
+
     protected static function booted()
     {
         static::deleted(function ($accessToken) {
