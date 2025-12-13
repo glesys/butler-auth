@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Add explicit table name to `AccessToken` to prevent implicit lookup through pluralization.
+
 
 ## [7.1.0] - 2025-05-13
 
