@@ -27,8 +27,10 @@ class ServiceProvider extends BaseServiceProvider
     protected function configureGuard()
     {
         Auth::resolved(function ($auth) {
-            $auth->extend('butler', function () use ($auth) {
-                return tap($this->createGuard($auth), function ($guard) {
+            $requestGuardCreator = fn () => $this->createGuard($auth);
+
+            $auth->extend('butler', function () use ($requestGuardCreator) {
+                return tap($requestGuardCreator(), function ($guard) {
                     app()->refresh('request', $guard, 'setRequest');
                 });
             });
