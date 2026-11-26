@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+## [9.0.0] - 2026-11-27
+
 ### Changed
 - **BREAKING:** Require Laravel 13.
 - Support PHP 8.6.
